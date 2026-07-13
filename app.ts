@@ -7,6 +7,6 @@ import contributeRoutes from "./routes/contributeRoutes.ts";
 const app = Fastify({ logger: true });
 
 await app.register(cors, { origin: ALLOWED_ORIGIN, methods: ["GET", "POST", "OPTIONS"] });
-await app.register(contributeRoutes, { prefix: "/api/contribute" });
+await app.register(contributeRoutes);
 
 export default app;
