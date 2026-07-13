@@ -1,0 +1,43 @@
+{
+	"name": "chessdocs-api",
+	"private": true,
+	"description": "",
+	"keywords": [],
+	"homepage": "https://github.com/dragunovartem99/chessdocs-api#readme",
+	"bugs": {
+		"url": "https://github.com/dragunovartem99/chessdocs-api/issues",
+		"email": "dragunovartem99@gmail.com"
+	},
+	"license": "MIT",
+	"author": {
+		"name": "Artem Dragunov",
+		"email": "dragunovartem99@gmail.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/dragunovartem99/chessdocs-api.git"
+	},
+	"type": "module",
+	"main": "index.js",
+	"scripts": {
+		"dev": "node --env-file=.env.development --watch index.ts",
+		"format": "oxfmt --write",
+		"format:check": "oxfmt --check",
+		"lint": "oxlint --fix",
+		"lint:check": "oxlint",
+		"prepare": "husky || true",
+		"start": "node index.ts",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"dependencies": {
+		"@fastify/cors": "^11.3.0",
+		"fastify": "^5.10.0"
+	},
+	"devDependencies": {
+		"@dragunovartem99/oxfmt-config": "^2.1.0",
+		"@dragunovartem99/oxlint-config": "^2.0.0",
+		"@types/node": "^24.0.14",
+		"husky": "^9.1.7",
+		"typescript": "^5.8.3"
+	}
+}
