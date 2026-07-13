@@ -7,6 +7,3 @@ on:
 jobs:
     pipes:
         uses: dragunovartem99/pipes/.github/workflows/ci.yaml@main
-        with:
-            run-types: false
-            run-test: false

@@ -1,0 +1,115 @@
+openapi: 3.1.0
+info:
+    title: chessdocs-api
+    description: Accepts edit suggestions for chessdocs.org and opens them as GitHub pull requests.
+    version: 1.0.0
+servers:
+    - url: https://chessdocs.org/api/contribute
+paths:
+    /:
+        get:
+            operationId: getSource
+            summary: Fetch the current markdown source of a docs page
+            parameters:
+                - name: path
+                  in: query
+                  required: true
+                  schema:
+                      $ref: "#/components/schemas/SourcePath"
+            responses:
+                "200":
+                    description: Raw markdown source
+                    content:
+                        text/plain:
+                            schema:
+                                type: string
+                "400":
+                    description: Invalid path
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Error"
+                "502":
+                    description: GitHub request failed
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Error"
+        post:
+            operationId: createSubmission
+            summary: Submit an edited docs page as a pull request
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/Submission"
+            responses:
+                "201":
+                    description: Pull request opened
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                required:
+                                    - url
+                                properties:
+                                    url:
+                                        type: string
+                "400":
+                    description: Submission failed validation
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Error"
+                "502":
+                    description: GitHub request failed
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Error"
+components:
+    schemas:
+        SourcePath:
+            description: Docs-relative markdown path; the pattern rejects traversal outside the docs tree
+            type: string
+            pattern: "^[a-z]{2}/[\\w/-]+\\.md$"
+        Submission:
+            type: object
+            additionalProperties: false
+            required:
+                - title
+                - content
+                - sourcePath
+            properties:
+                title:
+                    type: string
+                    maxLength: 120
+                    pattern: "\\S"
+                content:
+                    description: Full replacement content of the edited page
+                    type: string
+                    maxLength: 4000
+                    pattern: "\\S"
+                authorName:
+                    type: string
+                    maxLength: 120
+                authorContact:
+                    anyOf:
+                        - const: ""
+                        - type: string
+                          maxLength: 120
+                          pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+                lang:
+                    type: string
+                    pattern: "^[a-z]{2}$"
+                    default: en
+                sourcePath:
+                    $ref: "#/components/schemas/SourcePath"
+        Error:
+            type: object
+            required:
+                - error
+            properties:
+                error:
+                    type: string

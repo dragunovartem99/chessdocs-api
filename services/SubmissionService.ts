@@ -1,5 +1,5 @@
 import { GITHUB_BASE_BRANCH, GITHUB_OWNER, GITHUB_REPO } from "../config/env.ts";
-import type { Submission } from "../utils/validate.ts";
+import type { Submission } from "../models/Submission.ts";
 import { githubGraphql, toBase64 } from "./GithubService.ts";
 
 const REPO_HEAD_QUERY = `
@@ -88,7 +88,7 @@ function prBody(submission: Submission): string {
 }
 
 export async function openSubmissionPr(submission: Submission): Promise<string> {
-	const { sourcePath, description } = submission;
+	const { sourcePath, content: submittedContent } = submission;
 	const branch = branchName(submission);
 	const baseRef = `refs/heads/${GITHUB_BASE_BRANCH}`;
 
@@ -98,9 +98,9 @@ export async function openSubmissionPr(submission: Submission): Promise<string> 
 	const { id: repoId, ref } = head.repository;
 	const baseOid = ref.target.oid;
 
-	const content = description.endsWith("\n") ? description : `${description}\n`;
+	const content = submittedContent.endsWith("\n") ? submittedContent : `${submittedContent}\n`;
 
-	// The description is the full replacement content the user edited,
+	// The submitted content is the full replacement the user edited,
 	// so it overwrites the existing source file.
 	const result = await githubGraphql<{ pr: { pullRequest: { url: string } } }>(
 		OPEN_SUBMISSION_MUTATION,

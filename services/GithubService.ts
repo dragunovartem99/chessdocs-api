@@ -1,4 +1,5 @@
 import { GITHUB_BASE_BRANCH, GITHUB_OWNER, GITHUB_REPO, GITHUB_TOKEN } from "../config/env.ts";
+import { UpstreamError } from "../errors/UpstreamError.ts";
 
 export function toBase64(input: string): string {
 	const bytes = new TextEncoder().encode(input);
@@ -26,7 +27,10 @@ export async function githubRequest(url: string, init: RequestInit) {
 	const response = await fetch(url, { ...init, headers: githubHeaders() });
 	if (!response.ok) {
 		const body = await response.text();
-		throw new Error(`GitHub API error (${response.status}): ${body}`);
+		// The public message stays generic; details go to the log via cause.
+		throw new UpstreamError(`GitHub API error (${response.status})`, {
+			cause: new Error(body),
+		});
 	}
 	return response.json();
 }
@@ -42,15 +46,20 @@ export async function githubGraphql<T>(
 	});
 	if (!response.ok) {
 		const body = await response.text();
-		throw new Error(`GitHub GraphQL error (${response.status}): ${body}`);
+		throw new UpstreamError(`GitHub GraphQL error (${response.status})`, {
+			cause: new Error(body),
+		});
 	}
 
 	const { data, errors } = (await response.json()) as {
 		data: T | null;
 		errors?: { message: string }[];
 	};
-	if (errors?.length)
-		throw new Error(`GitHub GraphQL error: ${errors.map((e) => e.message).join("; ")}`);
+	if (errors?.length) {
+		throw new UpstreamError("GitHub GraphQL error", {
+			cause: new Error(errors.map((e) => e.message).join("; ")),
+		});
+	}
 	return data as T;
 }
 
