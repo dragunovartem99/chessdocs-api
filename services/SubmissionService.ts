@@ -30,6 +30,7 @@ async function createBranch(branch: string): Promise<void> {
 async function commitEdit(submission: Submission, branch: string): Promise<void> {
 	const { title, description, sourcePath } = submission;
 	const { sha } = await fetchSourceFile(sourcePath!);
+	const content = description.endsWith("\n") ? description : `${description}\n`;
 
 	await githubRequest(
 		`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/docs/${sourcePath}`,
@@ -37,7 +38,7 @@ async function commitEdit(submission: Submission, branch: string): Promise<void>
 			method: "PUT",
 			body: JSON.stringify({
 				message: `Edit suggestion: ${title}`,
-				content: toBase64(description),
+				content: toBase64(content),
 				branch,
 				sha,
 			}),
