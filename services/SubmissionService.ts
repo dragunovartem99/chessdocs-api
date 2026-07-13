@@ -1,9 +1,61 @@
 import { GITHUB_BASE_BRANCH, GITHUB_OWNER, GITHUB_REPO } from "../config/env.ts";
 import type { Submission } from "../utils/validate.ts";
-import { fetchSourceFile, githubRequest, toBase64 } from "./GithubService.ts";
+import { githubGraphql, toBase64 } from "./GithubService.ts";
 
-function slugify(title: string): string {
-	const base = title
+const REPO_HEAD_QUERY = `
+	query($owner: String!, $repo: String!, $baseRef: String!) {
+		repository(owner: $owner, name: $repo) {
+			id
+			ref(qualifiedName: $baseRef) {
+				target { oid }
+			}
+		}
+	}
+`;
+
+const OPEN_SUBMISSION_MUTATION = `
+	mutation(
+		$repoId: ID!
+		$refName: String!
+		$baseOid: GitObjectID!
+		$nameWithOwner: String!
+		$branchName: String!
+		$path: String!
+		$content: Base64String!
+		$commitMessage: String!
+		$baseRefName: String!
+		$prTitle: String!
+		$prBody: String!
+	) {
+		createRef(input: { repositoryId: $repoId, name: $refName, oid: $baseOid }) {
+			ref { name }
+		}
+		commit: createCommitOnBranch(
+			input: {
+				branch: { repositoryNameWithOwner: $nameWithOwner, branchName: $branchName }
+				message: { headline: $commitMessage }
+				fileChanges: { additions: [{ path: $path, contents: $content }] }
+				expectedHeadOid: $baseOid
+			}
+		) {
+			commit { oid }
+		}
+		pr: createPullRequest(
+			input: {
+				repositoryId: $repoId
+				baseRefName: $baseRefName
+				headRefName: $branchName
+				title: $prTitle
+				body: $prBody
+			}
+		) {
+			pullRequest { url }
+		}
+	}
+`;
+
+function slugify(text: string): string {
+	const base = text
 		.toLowerCase()
 		.normalize("NFKD")
 		.replaceAll(/[̀-ͯ]/gu, "")
@@ -13,58 +65,59 @@ function slugify(title: string): string {
 	return base || "submission";
 }
 
-async function createBranch(branch: string): Promise<void> {
-	const baseRef = (await githubRequest(
-		`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/ref/heads/${GITHUB_BASE_BRANCH}`,
-		{ method: "GET" }
-	)) as { object: { sha: string } };
-
-	await githubRequest(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/refs`, {
-		method: "POST",
-		body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: baseRef.object.sha }),
-	});
+function branchName(submission: Submission): string {
+	const { sourcePath, title } = submission;
+	const docSlug = slugify(sourcePath.replace(/\.md$/u, "").replaceAll("/", "-"));
+	const shortId = Date.now().toString(36);
+	return `edit/${docSlug}/${slugify(title)}-${shortId}`;
 }
 
-// The description is the full replacement content the user edited,
-// so it overwrites the existing source file.
-async function commitEdit(submission: Submission, branch: string): Promise<void> {
-	const { title, description, sourcePath } = submission;
-	const { sha } = await fetchSourceFile(sourcePath);
-	const content = description.endsWith("\n") ? description : `${description}\n`;
+function prTitle(submission: Submission): string {
+	return `Docs edit: ${submission.title}`;
+}
 
-	await githubRequest(
-		`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/docs/${sourcePath}`,
-		{
-			method: "PUT",
-			body: JSON.stringify({
-				message: `Edit suggestion: ${title}`,
-				content: toBase64(content),
-				branch,
-				sha,
-			}),
-		}
-	);
+function prBody(submission: Submission): string {
+	const { sourcePath, authorName, authorContact } = submission;
+	const lines = [
+		`Suggested edit to \`docs/${sourcePath}\`.`,
+		"",
+		`**Submitted by:** ${authorName || "Anonymous"}`,
+	];
+	if (authorContact) lines.push(`**Contact:** ${authorContact}`);
+	return lines.join("\n");
 }
 
 export async function openSubmissionPr(submission: Submission): Promise<string> {
-	const { title, authorName, authorContact, sourcePath } = submission;
-	const branch = `submission/${Date.now()}-${slugify(title)}`;
+	const { sourcePath, description } = submission;
+	const branch = branchName(submission);
+	const baseRef = `refs/heads/${GITHUB_BASE_BRANCH}`;
 
-	await createBranch(branch);
-	await commitEdit(submission, branch);
+	const head = await githubGraphql<{
+		repository: { id: string; ref: { target: { oid: string } } };
+	}>(REPO_HEAD_QUERY, { owner: GITHUB_OWNER, repo: GITHUB_REPO, baseRef });
+	const { id: repoId, ref } = head.repository;
+	const baseOid = ref.target.oid;
 
-	const pr = (await githubRequest(
-		`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls`,
+	const content = description.endsWith("\n") ? description : `${description}\n`;
+
+	// The description is the full replacement content the user edited,
+	// so it overwrites the existing source file.
+	const result = await githubGraphql<{ pr: { pullRequest: { url: string } } }>(
+		OPEN_SUBMISSION_MUTATION,
 		{
-			method: "POST",
-			body: JSON.stringify({
-				title: `Edit suggestion for ${sourcePath}: ${title}`,
-				head: branch,
-				base: GITHUB_BASE_BRANCH,
-				body: `Edit suggestion for \`docs/${sourcePath}\`.${authorName ? ` From ${authorName}.` : ""}${authorContact ? `\n\nContact: ${authorContact}` : ""}`,
-			}),
+			repoId,
+			refName: `refs/heads/${branch}`,
+			baseOid,
+			nameWithOwner: `${GITHUB_OWNER}/${GITHUB_REPO}`,
+			branchName: branch,
+			path: `docs/${sourcePath}`,
+			content: toBase64(content),
+			commitMessage: `Edit suggestion: ${submission.title}`,
+			baseRefName: GITHUB_BASE_BRANCH,
+			prTitle: prTitle(submission),
+			prBody: prBody(submission),
 		}
-	)) as { html_url: string };
+	);
 
-	return pr.html_url;
+	return result.pr.pullRequest.url;
 }

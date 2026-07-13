@@ -31,6 +31,29 @@ export async function githubRequest(url: string, init: RequestInit) {
 	return response.json();
 }
 
+export async function githubGraphql<T>(
+	query: string,
+	variables: Record<string, unknown>
+): Promise<T> {
+	const response = await fetch("https://api.github.com/graphql", {
+		method: "POST",
+		headers: githubHeaders(),
+		body: JSON.stringify({ query, variables }),
+	});
+	if (!response.ok) {
+		const body = await response.text();
+		throw new Error(`GitHub GraphQL error (${response.status}): ${body}`);
+	}
+
+	const { data, errors } = (await response.json()) as {
+		data: T | null;
+		errors?: { message: string }[];
+	};
+	if (errors?.length)
+		throw new Error(`GitHub GraphQL error: ${errors.map((e) => e.message).join("; ")}`);
+	return data as T;
+}
+
 export async function fetchSourceFile(
 	sourcePath: string
 ): Promise<{ content: string; sha: string }> {
