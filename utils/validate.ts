@@ -20,7 +20,7 @@ export type Submission = {
 	authorName: string;
 	authorContact: string;
 	lang: string;
-	sourcePath?: string;
+	sourcePath: string;
 };
 
 export function validate(body: SubmissionBody): Submission | null {
@@ -46,11 +46,7 @@ export function validate(body: SubmissionBody): Submission | null {
 			!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(authorContact))
 	)
 		return null;
-	if (
-		sourcePath !== undefined &&
-		(typeof sourcePath !== "string" || !SOURCE_PATH_PATTERN.test(sourcePath))
-	)
-		return null;
+	if (typeof sourcePath !== "string" || !SOURCE_PATH_PATTERN.test(sourcePath)) return null;
 
 	return {
 		title: title.trim(),
@@ -58,6 +54,6 @@ export function validate(body: SubmissionBody): Submission | null {
 		authorName: typeof authorName === "string" ? authorName.trim() : "",
 		authorContact: typeof authorContact === "string" ? authorContact.trim() : "",
 		lang: typeof lang === "string" && /^[a-z]{2}$/u.test(lang) ? lang : "en",
-		sourcePath: typeof sourcePath === "string" ? sourcePath : undefined,
+		sourcePath,
 	};
 }

@@ -25,11 +25,11 @@ async function createBranch(branch: string): Promise<void> {
 	});
 }
 
-// Edit suggestion: the description is the full replacement content the user edited,
-// so it overwrites the existing source file rather than landing in a new file.
+// The description is the full replacement content the user edited,
+// so it overwrites the existing source file.
 async function commitEdit(submission: Submission, branch: string): Promise<void> {
 	const { title, description, sourcePath } = submission;
-	const { sha } = await fetchSourceFile(sourcePath!);
+	const { sha } = await fetchSourceFile(sourcePath);
 	const content = description.endsWith("\n") ? description : `${description}\n`;
 
 	await githubRequest(
@@ -46,59 +46,22 @@ async function commitEdit(submission: Submission, branch: string): Promise<void>
 	);
 }
 
-// New submission: there's no existing file to edit, so it's recorded as a new
-// front-matter file for maintainers to triage and turn into docs.
-async function commitNewSubmission(submission: Submission, branch: string): Promise<void> {
-	const { title, description, authorName, authorContact, lang } = submission;
-	const path = `submissions/${branch.replace("submission/", "")}.md`;
-
-	const fileContent = [
-		"---",
-		`title: ${JSON.stringify(title)}`,
-		`lang: ${lang}`,
-		`authorName: ${JSON.stringify(authorName)}`,
-		`authorContact: ${JSON.stringify(authorContact)}`,
-		`submittedAt: ${new Date().toISOString()}`,
-		"---",
-		"",
-		description,
-		"",
-	].join("\n");
-
-	await githubRequest(
-		`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`,
-		{
-			method: "PUT",
-			body: JSON.stringify({
-				message: `Submission: ${title}`,
-				content: toBase64(fileContent),
-				branch,
-			}),
-		}
-	);
-}
-
 export async function openSubmissionPr(submission: Submission): Promise<string> {
 	const { title, authorName, authorContact, sourcePath } = submission;
 	const branch = `submission/${Date.now()}-${slugify(title)}`;
-	const prTitle = sourcePath
-		? `Edit suggestion for ${sourcePath}: ${title}`
-		: `Submission: ${title}`;
 
 	await createBranch(branch);
-
-	if (sourcePath) await commitEdit(submission, branch);
-	else await commitNewSubmission(submission, branch);
+	await commitEdit(submission, branch);
 
 	const pr = (await githubRequest(
 		`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls`,
 		{
 			method: "POST",
 			body: JSON.stringify({
-				title: prTitle,
+				title: `Edit suggestion for ${sourcePath}: ${title}`,
 				head: branch,
 				base: GITHUB_BASE_BRANCH,
-				body: `${sourcePath ? `Edit suggestion for \`docs/${sourcePath}\`.` : "New content submission."}${authorName ? ` From ${authorName}.` : ""}${authorContact ? `\n\nContact: ${authorContact}` : ""}`,
+				body: `Edit suggestion for \`docs/${sourcePath}\`.${authorName ? ` From ${authorName}.` : ""}${authorContact ? `\n\nContact: ${authorContact}` : ""}`,
 			}),
 		}
 	)) as { html_url: string };
