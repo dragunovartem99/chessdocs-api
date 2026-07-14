@@ -7,8 +7,7 @@ test("trims text fields and keeps the rest", () => {
 	const normalized = normalizeSubmission({
 		title: "  Title  ",
 		content: "  Body\n",
-		authorName: " Artem ",
-		authorContact: " a@b.cd ",
+		author: { name: " Artem ", contact: " a@b.cd " },
 		lang: "ru",
 		sourcePath: "ru/glossary/fork.md",
 	});
@@ -16,8 +15,7 @@ test("trims text fields and keeps the rest", () => {
 	assert.deepEqual(normalized, {
 		title: "Title",
 		content: "Body",
-		authorName: "Artem",
-		authorContact: "a@b.cd",
+		author: { name: "Artem", contact: "a@b.cd" },
 		lang: "ru",
 		sourcePath: "ru/glossary/fork.md",
 	});
@@ -31,6 +29,5 @@ test("leaves optional fields undefined", () => {
 		sourcePath: "en/glossary/fork.md",
 	});
 
-	assert.equal(normalized.authorName, undefined);
-	assert.equal(normalized.authorContact, undefined);
+	assert.equal(normalized.author, undefined);
 });

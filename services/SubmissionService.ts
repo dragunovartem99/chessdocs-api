@@ -77,13 +77,13 @@ function prTitle(submission: Submission): string {
 }
 
 function prBody(submission: Submission): string {
-	const { sourcePath, authorName, authorContact } = submission;
+	const { sourcePath, author } = submission;
 	const lines = [
-		`Suggested edit to \`docs/${sourcePath}\`.`,
+		`Suggested edit to \`docs/${sourcePath}\``,
 		"",
-		`**Submitted by:** ${authorName || "Anonymous"}`,
+		`**Submitted by:** ${author?.name || "Anonymous"}`,
 	];
-	if (authorContact) lines.push(`**Contact:** ${authorContact}`);
+	if (author?.contact) lines.push(`**Contact:** ${author.contact}`);
 	return lines.join("\n");
 }
 

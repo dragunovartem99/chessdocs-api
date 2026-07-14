@@ -5,7 +5,9 @@ export function normalizeSubmission(submission: Submission): Submission {
 		...submission,
 		title: submission.title.trim(),
 		content: submission.content.trim(),
-		authorName: submission.authorName?.trim(),
-		authorContact: submission.authorContact?.trim(),
+		author: submission.author && {
+			name: submission.author.name?.trim(),
+			contact: submission.author.contact?.trim(),
+		},
 	};
 }

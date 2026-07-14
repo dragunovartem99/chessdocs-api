@@ -91,15 +91,19 @@ components:
                     type: string
                     maxLength: 4000
                     pattern: "\\S"
-                authorName:
-                    type: string
-                    maxLength: 120
-                authorContact:
-                    anyOf:
-                        - const: ""
-                        - type: string
-                          maxLength: 120
-                          pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+                author:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                        name:
+                            type: string
+                            maxLength: 120
+                        contact:
+                            anyOf:
+                                - const: ""
+                                - type: string
+                                  maxLength: 120
+                                  pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
                 lang:
                     type: string
                     pattern: "^[a-z]{2}$"

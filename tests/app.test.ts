@@ -66,7 +66,7 @@ test("rejects an invalid contact email", async () => {
 	const response = await app.inject({
 		method: "POST",
 		url: "/",
-		payload: { ...validSubmission, authorContact: "not-an-email" },
+		payload: { ...validSubmission, author: { contact: "not-an-email" } },
 	});
 
 	assert.equal(response.statusCode, 400);
