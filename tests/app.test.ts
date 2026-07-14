@@ -28,13 +28,13 @@ test("returns the source file as plain text", async () => {
 });
 
 test("rejects a path outside the docs tree", async () => {
-	for (const path of ["../secrets.md", "en/../../etc/passwd.md", "en/notes.txt", ""]) {
-		const response = await app.inject({
-			method: "GET",
-			url: `/?path=${encodeURIComponent(path)}`,
-		});
-		assert.equal(response.statusCode, 400, `expected 400 for ${JSON.stringify(path)}`);
-	}
+	const paths = ["../secrets.md", "en/../../etc/passwd.md", "en/notes.txt", ""];
+	const responses = await Promise.all(
+		paths.map((path) => app.inject({ method: "GET", url: `/?path=${encodeURIComponent(path)}` })),
+	);
+	responses.forEach((response, i) => {
+		assert.equal(response.statusCode, 400, `expected 400 for ${JSON.stringify(paths[i])}`);
+	});
 });
 
 test("opens a pull request for a valid submission", async () => {

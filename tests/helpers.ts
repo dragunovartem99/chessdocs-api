@@ -9,13 +9,13 @@ export async function createTestApp(overrides: Partial<ContributeServices> = {})
 	const captured: Captured = { submissions: [], fetchedPaths: [] };
 
 	const services: ContributeServices = {
-		async fetchSourceFile(sourcePath) {
+		fetchSourceFile(sourcePath) {
 			captured.fetchedPaths.push(sourcePath);
-			return { content: `# Source of ${sourcePath}\n`, sha: "abc123" };
+			return Promise.resolve({ content: `# Source of ${sourcePath}\n`, sha: "abc123" });
 		},
-		async openSubmissionPr(submission) {
+		openSubmissionPr(submission) {
 			captured.submissions.push(submission);
-			return "https://github.com/example/repo/pull/1";
+			return Promise.resolve("https://github.com/example/repo/pull/1");
 		},
 		...overrides,
 	};
@@ -26,10 +26,10 @@ export async function createTestApp(overrides: Partial<ContributeServices> = {})
 
 export function failingServices(): ContributeServices {
 	return {
-		async fetchSourceFile() {
+		fetchSourceFile() {
 			throw new UpstreamError("GitHub API error (500)");
 		},
-		async openSubmissionPr() {
+		openSubmissionPr() {
 			throw new UpstreamError("GitHub GraphQL error");
 		},
 	};
