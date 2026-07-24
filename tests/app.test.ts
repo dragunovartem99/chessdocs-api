@@ -27,6 +27,19 @@ test("returns the source file as plain text", async () => {
 	assert.equal(response.body, "# Source of en/glossary/blockade.md\n");
 });
 
+test("refuses to serve a page marked editLink: false", async () => {
+	const { app: guarded } = await createTestApp({
+		fetchSourceFile: (sourcePath) =>
+			Promise.resolve({ content: `---\neditLink: false\n---\n# ${sourcePath}\n`, sha: "x" }),
+	});
+
+	const response = await guarded.inject({ method: "GET", url: "/?path=en/about.md" });
+	assert.equal(response.statusCode, 403);
+	assert.deepEqual(response.json(), { error: "This page is not editable" });
+
+	await guarded.close();
+});
+
 test("rejects a path outside the docs tree", async () => {
 	const paths = ["../secrets.md", "en/../../etc/passwd.md", "en/notes.txt", ""];
 	const responses = await Promise.all(
