@@ -13,7 +13,11 @@ export function contributeRoutes(controller: ContributeController) {
 		);
 		app.post<{ Body: Submission }>(
 			"/",
-			{ schema: { body: bodySchema("/", "post") } },
+			{
+				schema: { body: bodySchema("/", "post") },
+				// Opening PRs spends the server GITHUB_TOKEN, so cap it far below the global default.
+				config: { rateLimit: { max: 5, timeWindow: "10 minutes" } },
+			},
 			controller.createSubmission.bind(controller)
 		);
 	};

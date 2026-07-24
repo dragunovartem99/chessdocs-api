@@ -30,7 +30,9 @@ test("returns the source file as plain text", async () => {
 test("rejects a path outside the docs tree", async () => {
 	const paths = ["../secrets.md", "en/../../etc/passwd.md", "en/notes.txt", ""];
 	const responses = await Promise.all(
-		paths.map((path) => app.inject({ method: "GET", url: `/?path=${encodeURIComponent(path)}` })),
+		paths.map((path) =>
+			app.inject({ method: "GET", url: `/?path=${encodeURIComponent(path)}` })
+		)
 	);
 	responses.forEach((response, i) => {
 		assert.equal(response.statusCode, 400, `expected 400 for ${JSON.stringify(paths[i])}`);
@@ -77,6 +79,39 @@ test("rejects a submission without sourcePath", async () => {
 	const response = await app.inject({ method: "POST", url: "/", payload: withoutPath });
 
 	assert.equal(response.statusCode, 400);
+});
+
+test("rate-limits repeated submissions per client IP", async () => {
+	// Isolated app + fixed forwarded IP so the bucket is independent of other tests.
+	const { app: limited } = await createTestApp();
+	const headers = { "x-forwarded-for": "203.0.113.7" };
+
+	const allowed = await Promise.all(
+		Array.from({ length: 5 }, () =>
+			limited.inject({ method: "POST", url: "/", headers, payload: validSubmission })
+		)
+	);
+	allowed.forEach((response) => assert.equal(response.statusCode, 201));
+
+	const blocked = await limited.inject({
+		method: "POST",
+		url: "/",
+		headers,
+		payload: validSubmission,
+	});
+	assert.equal(blocked.statusCode, 429);
+	assert.match(blocked.json().error, /rate limit exceeded/iu);
+
+	// A different client IP is unaffected.
+	const other = await limited.inject({
+		method: "POST",
+		url: "/",
+		headers: { "x-forwarded-for": "198.51.100.9" },
+		payload: validSubmission,
+	});
+	assert.equal(other.statusCode, 201);
+
+	await limited.close();
 });
 
 test("maps GitHub failures to 502", async () => {
