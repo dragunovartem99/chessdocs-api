@@ -40,6 +40,45 @@ test("refuses to serve a page marked editLink: false", async () => {
 	await guarded.close();
 });
 
+test("refuses to serve a page marked dev: true", async () => {
+	const { app: guarded } = await createTestApp({
+		fetchSourceFile: (sourcePath) =>
+			Promise.resolve({ content: `---\ndev: true\n---\n# ${sourcePath}\n`, sha: "x" }),
+	});
+
+	const response = await guarded.inject({ method: "GET", url: "/?path=en/pgn-editor.md" });
+	assert.equal(response.statusCode, 403);
+	assert.deepEqual(response.json(), { error: "This page is not editable" });
+
+	await guarded.close();
+});
+
+test("refuses to open a pull request for a page marked editLink: false", async () => {
+	const { app: guarded } = await createTestApp({
+		fetchSourceFile: (sourcePath) =>
+			Promise.resolve({ content: `---\neditLink: false\n---\n# ${sourcePath}\n`, sha: "x" }),
+	});
+
+	const response = await guarded.inject({ method: "POST", url: "/", payload: validSubmission });
+	assert.equal(response.statusCode, 403);
+	assert.deepEqual(response.json(), { error: "This page is not editable" });
+
+	await guarded.close();
+});
+
+test("refuses to open a pull request for a page marked dev: true", async () => {
+	const { app: guarded } = await createTestApp({
+		fetchSourceFile: (sourcePath) =>
+			Promise.resolve({ content: `---\ndev: true\n---\n# ${sourcePath}\n`, sha: "x" }),
+	});
+
+	const response = await guarded.inject({ method: "POST", url: "/", payload: validSubmission });
+	assert.equal(response.statusCode, 403);
+	assert.deepEqual(response.json(), { error: "This page is not editable" });
+
+	await guarded.close();
+});
+
 test("rejects a path outside the docs tree", async () => {
 	const paths = ["../secrets.md", "en/../../etc/passwd.md", "en/notes.txt", ""];
 	const responses = await Promise.all(
