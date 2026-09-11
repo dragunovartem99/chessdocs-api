@@ -17,5 +17,8 @@ jobs:
                   script: |
                       set -e
                       cd ${{ secrets.VPS_PROJECT_PATH }}
-                      git pull
+                      # The checkout is a deploy target, never a place to commit from:
+                      # reset to the pushed tip so local drift can't block a deploy.
+                      git fetch origin
+                      git reset --hard origin/main
                       ./deploy.sh
