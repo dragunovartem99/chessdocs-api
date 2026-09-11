@@ -1,4 +1,5 @@
 import { GITHUB_BASE_BRANCH, GITHUB_OWNER, GITHUB_REPO, GITHUB_TOKEN } from "../config/env.ts";
+import { DOCS_ROOT } from "../config/paths.ts";
 import { UpstreamError } from "../errors/UpstreamError.ts";
 
 export function toBase64(input: string): string {
@@ -67,7 +68,7 @@ export async function fetchSourceFile(
 	sourcePath: string
 ): Promise<{ content: string; sha: string }> {
 	const file = (await githubRequest(
-		`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/docs/${sourcePath}?ref=${GITHUB_BASE_BRANCH}`,
+		`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${DOCS_ROOT}/${sourcePath}?ref=${GITHUB_BASE_BRANCH}`,
 		{ method: "GET" }
 	)) as { content: string; sha: string };
 

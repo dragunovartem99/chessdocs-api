@@ -1,4 +1,5 @@
 import { GITHUB_BASE_BRANCH, GITHUB_OWNER, GITHUB_REPO } from "../config/env.ts";
+import { DOCS_ROOT } from "../config/paths.ts";
 import type { Submission } from "../models/Submission.ts";
 import { githubGraphql, toBase64 } from "./GithubService.ts";
 
@@ -79,7 +80,7 @@ function prTitle(submission: Submission): string {
 function prBody(submission: Submission): string {
 	const { sourcePath, author } = submission;
 	const lines = [
-		`Suggested edit to \`docs/${sourcePath}\``,
+		`Suggested edit to \`${DOCS_ROOT}/${sourcePath}\``,
 		"",
 		`**Submitted by:** ${author?.name || "Anonymous"}`,
 	];
@@ -110,7 +111,7 @@ export async function openSubmissionPr(submission: Submission): Promise<string> 
 			baseOid,
 			nameWithOwner: `${GITHUB_OWNER}/${GITHUB_REPO}`,
 			branchName: branch,
-			path: `docs/${sourcePath}`,
+			path: `${DOCS_ROOT}/${sourcePath}`,
 			content: toBase64(content),
 			commitMessage: `Edit suggestion: ${submission.title}`,
 			baseRefName: GITHUB_BASE_BRANCH,
