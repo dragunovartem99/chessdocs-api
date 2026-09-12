@@ -19,10 +19,17 @@ tested against it so the two cannot drift.
 Returns the page's current markdown as `text/plain`.
 
 ```console
-$ curl 'https://api.chessdocs.org/?path=en/glossary/fork.md'
-# Fork
+$ curl 'https://api.chessdocs.org/?path=en/glossary/analyst.md'
+---
+sources:
+    - id: chess-dictionary-1964
+      pages: [437]
+diagram: false
+---
 
-A double attack by a single piece.
+# Analyst {#analyst}
+
+A specialist in chess [analysis](./analysis).
 ```
 
 | Status | Meaning                                                       |
@@ -41,9 +48,9 @@ Takes the full replacement text of one page and opens a pull request for it.
 $ curl -X POST https://api.chessdocs.org/ \
     -H 'Content-Type: application/json' \
     -d '{
-          "title": "Clarify the fork example",
-          "content": "# Fork\n\nA double attack by a single piece.",
-          "sourcePath": "en/glossary/fork.md",
+          "title": "Clarify what an analyst is",
+          "content": "# Analyst {#analyst}\n\nA specialist in chess [analysis](./analysis).",
+          "sourcePath": "en/glossary/analyst.md",
           "author": { "name": "Artem", "contact": "artem@example.com" }
         }'
 {"url":"https://github.com/.../pull/42"}
