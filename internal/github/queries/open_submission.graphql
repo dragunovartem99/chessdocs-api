@@ -1,0 +1,38 @@
+mutation(
+	$repoId: ID!
+	$refName: String!
+	$baseOid: GitObjectID!
+	$nameWithOwner: String!
+	$branchName: String!
+	$path: String!
+	$content: Base64String!
+	$commitMessage: String!
+	$baseRefName: String!
+	$prTitle: String!
+	$prBody: String!
+) {
+	createRef(input: { repositoryId: $repoId, name: $refName, oid: $baseOid }) {
+		ref { name }
+	}
+	commit: createCommitOnBranch(
+		input: {
+			branch: { repositoryNameWithOwner: $nameWithOwner, branchName: $branchName }
+			message: { headline: $commitMessage }
+			fileChanges: { additions: [{ path: $path, contents: $content }] }
+			expectedHeadOid: $baseOid
+		}
+	) {
+		commit { oid }
+	}
+	pr: createPullRequest(
+		input: {
+			repositoryId: $repoId
+			baseRefName: $baseRefName
+			headRefName: $branchName
+			title: $prTitle
+			body: $prBody
+		}
+	) {
+		pullRequest { url }
+	}
+}

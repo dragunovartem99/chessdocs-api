@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"embed"
 	"encoding/base64"
 	"strconv"
 	"strings"
@@ -10,61 +11,24 @@ import (
 	"github.com/dragunovartem99/chessdocs-api/internal/docs"
 )
 
-const repoHeadQuery = `
-	query($owner: String!, $repo: String!, $baseRef: String!) {
-		repository(owner: $owner, name: $repo) {
-			id
-			ref(qualifiedName: $baseRef) {
-				target { oid }
-			}
-		}
-	}
-`
+//go:embed queries/*.graphql
+var queriesFS embed.FS
+
+var repoHeadQuery = mustReadQuery("repo_head.graphql")
 
 // openSubmissionMutation branches, commits and opens the pull request in one
 // round trip. createCommitOnBranch is used rather than the git plumbing because
 // GitHub signs what it writes; expectedHeadOid holds it to the commit the branch
 // was just cut from, so a retry cannot stack a second edit onto the same branch.
-const openSubmissionMutation = `
-	mutation(
-		$repoId: ID!
-		$refName: String!
-		$baseOid: GitObjectID!
-		$nameWithOwner: String!
-		$branchName: String!
-		$path: String!
-		$content: Base64String!
-		$commitMessage: String!
-		$baseRefName: String!
-		$prTitle: String!
-		$prBody: String!
-	) {
-		createRef(input: { repositoryId: $repoId, name: $refName, oid: $baseOid }) {
-			ref { name }
-		}
-		commit: createCommitOnBranch(
-			input: {
-				branch: { repositoryNameWithOwner: $nameWithOwner, branchName: $branchName }
-				message: { headline: $commitMessage }
-				fileChanges: { additions: [{ path: $path, contents: $content }] }
-				expectedHeadOid: $baseOid
-			}
-		) {
-			commit { oid }
-		}
-		pr: createPullRequest(
-			input: {
-				repositoryId: $repoId
-				baseRefName: $baseRefName
-				headRefName: $branchName
-				title: $prTitle
-				body: $prBody
-			}
-		) {
-			pullRequest { url }
-		}
+var openSubmissionMutation = mustReadQuery("open_submission.graphql")
+
+func mustReadQuery(name string) string {
+	content, err := queriesFS.ReadFile("queries/" + name)
+	if err != nil {
+		panic(err)
 	}
-`
+	return string(content)
+}
 
 // OpenPullRequest publishes a submission as a branch, a commit replacing the
 // page, and a pull request against the base branch. It returns the pull

@@ -1,0 +1,8 @@
+query($owner: String!, $repo: String!, $baseRef: String!) {
+	repository(owner: $owner, name: $repo) {
+		id
+		ref(qualifiedName: $baseRef) {
+			target { oid }
+		}
+	}
+}
