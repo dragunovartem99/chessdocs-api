@@ -106,12 +106,14 @@ importing the client, so the handlers are tested end to end without a network, a
 
 ```console
 $ make run     # serve locally with .env.development
-$ make check   # gofmt, go vet, go test -race — what CI runs
+$ make check   # gofmt, golangci-lint, go vet, go test -race — what CI runs
 $ make cover   # test coverage per function
 ```
 
 ## Deployment
 
-Pushes to `main` deploy over SSH: the VPS checkout is reset to the pushed commit and
+Pull requests run `fmt-check`, `lint`, `vet` and `test` through
+[pipes](https://github.com/dragunovartem99/pipes). Merging to `main` runs the same checks, then
+deploys over SSH with pipes `deploy-vps`: the VPS checkout is reset to the pushed commit and
 `deploy.sh` installs the Caddy site and rebuilds the container. The image is a distroless
 static binary running as a non-root user, behind Caddy at `api.chessdocs.org`.
