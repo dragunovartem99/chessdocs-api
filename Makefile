@@ -2,7 +2,7 @@
 
 # check is what CI runs and what the pre-commit hook runs.
 .PHONY: check
-check: fmt-check vet test
+check: fmt-check lint vet test
 
 .PHONY: fmt
 fmt:
@@ -12,6 +12,10 @@ fmt:
 fmt-check:
 	@unformatted=$$(gofmt -l .); \
 	if [ -n "$$unformatted" ]; then echo "gofmt needed:"; echo "$$unformatted"; exit 1; fi
+
+.PHONY: lint
+lint:
+	golangci-lint run
 
 .PHONY: vet
 vet:

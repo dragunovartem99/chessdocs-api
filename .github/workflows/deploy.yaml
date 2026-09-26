@@ -2,23 +2,16 @@ name: Deploy
 
 on:
     push:
-        branches: [main]
+        branches: ["main"]
+    workflow_dispatch:
 
 jobs:
-    deploy:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Deploy to VPS
-              uses: appleboy/ssh-action@v1
-              with:
-                  host: ${{ secrets.VPS_HOST }}
-                  username: ${{ secrets.VPS_USER }}
-                  key: ${{ secrets.VPS_SSH_KEY }}
-                  script: |
-                      set -e
-                      cd ${{ secrets.VPS_PROJECT_PATH }}
-                      # The checkout is a deploy target, never a place to commit from:
-                      # reset to the pushed tip so local drift can't block a deploy.
-                      git fetch origin
-                      git reset --hard origin/main
-                      ./deploy.sh
+    ci:
+        uses: ./.github/workflows/ci.yaml
+
+    pipes:
+        needs: ci
+        uses: dragunovartem99/pipes/.github/workflows/deploy-vps.yaml@v1.0.1
+        with:
+            url: https://api.chessdocs.org
+        secrets: inherit

@@ -74,26 +74,6 @@ func New(cfg Config, opts ...Option) *Client {
 	return gh
 }
 
-// UpstreamError reports a GitHub call that did not succeed. Summary is written
-// for the submitter and says nothing about our credentials or the repository;
-// Detail carries the upstream response and belongs in the log only.
-type UpstreamError struct {
-	Summary string
-	Detail  string
-}
-
-func (e *UpstreamError) Error() string {
-	if e.Detail == "" {
-		return e.Summary
-	}
-	return e.Summary + ": " + e.Detail
-}
-
-// HTTPStatus and PublicMessage let the HTTP layer answer without having to
-// know that GitHub exists.
-func (e *UpstreamError) HTTPStatus() int       { return http.StatusBadGateway }
-func (e *UpstreamError) PublicMessage() string { return e.Summary }
-
 func (c *Client) endpoint(query url.Values, segments ...string) string {
 	u := *c.base
 	u.Path = "/" + strings.Join(segments, "/")
@@ -133,12 +113,4 @@ func (c *Client) send(ctx context.Context, method, endpoint string, body []byte,
 		return &UpstreamError{Summary: "GitHub sent an unreadable response", Detail: err.Error()}
 	}
 	return nil
-}
-
-func snippet(r io.Reader) string {
-	body, err := io.ReadAll(io.LimitReader(r, detailLimit))
-	if err != nil {
-		return err.Error()
-	}
-	return strings.TrimSpace(string(body))
 }
