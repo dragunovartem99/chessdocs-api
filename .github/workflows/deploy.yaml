@@ -6,11 +6,7 @@ on:
     workflow_dispatch:
 
 jobs:
-    ci:
-        uses: ./.github/workflows/ci.yaml
-
     pipes:
-        needs: ci
         uses: dragunovartem99/pipes/.github/workflows/deploy-vps.yaml@v1.2.0
         with:
             url: https://api.chessdocs.org
