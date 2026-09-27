@@ -7,7 +7,7 @@ on:
 
 jobs:
     pipes:
-        uses: dragunovartem99/pipes/.github/workflows/deploy-vps.yaml@v1.3.0
+        uses: dragunovartem99/pipes/.github/workflows/deploy-vps.yaml@v2.0.0
         with:
             url: https://api.chessdocs.org
         secrets: inherit
