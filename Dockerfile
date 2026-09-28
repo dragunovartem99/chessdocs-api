@@ -1,6 +1,6 @@
 # Build the binary against the module cache, then ship it alone: the runtime
 # image holds no toolchain, no shell, and no source.
-FROM golang:1.26-alpine AS build
+FROM golang:1.27-alpine AS build
 
 WORKDIR /src
 
